@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
           title: Text('My App'),
         ),
         body: Center(
-          child: Text('Hello World!'),
+          child: Text('Welcome!'),
         ),
       ),
     );
