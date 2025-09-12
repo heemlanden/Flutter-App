@@ -22,7 +22,7 @@ jobs:
     env:
       scheme: Runner
       archive_path: build/ios/archive
-      path: "Runner.app"
+      path: App
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -58,7 +58,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
             mkdir Payload
-            cp -r build/ios/iphonesimulator/${{ env.scheme }}.app 
+            cp -r build/ios/iphonesimulator/${{ env.scheme }}.app /${{ env.path }}
           else
             tar -cvf "${{ env.path }}" "build/ios/archive/Runner.xcarchive"
           fi
