@@ -1,17 +1,27 @@
-name: Build Flutter iOS
+name: Flutter iOS Fake-Sign Build
 
-on:
+on: 
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs: 
+      release__nightly:
+        description: Create a nightly release
+        type: boolean
+        required: false
 
 jobs:
-  build-ios:
+  build:
+    name: Build Flutter iOS IPA (unsigned)
     runs-on: macos-latest
+    env:
+      archive_path: build/ios/archive
+      ipa_path: build/ios/ipa
+    outputs:
+      ipa_path: ${{ env.ipa_path }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Flutter
@@ -23,38 +33,49 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Build unsigned archive
+      - name: Build unsigned IPA
         run: flutter build ipa --no-codesign
 
-      # ➡️ Genereer ExportOptions.plist
-      - name: Create ExportOptions.plist
-        run: |
-          cat > ios/ExportOptions.plist <<'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>development</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>-</string>
-            <key>compileBitcode</key>
-            <false/>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath build/ios/archive/Runner.xcarchive \
-            -exportOptionsPlist ios/ExportOptions.plist \
-            -exportPath build/ios/ipa
-
-      - name: Upload unsigned IPA
+      - name: Upload unsigned archive
         uses: actions/upload-artifact@v4
         with:
-          name: unsigned-ipa
-          path: build/ios/ipa/*.ipa
+          name: unsigned-xcarchive
+          path: build/ios/archive/Runner.xcarchive
+
+  fakesign:
+    name: Fake-sign IPA with ldid
+    runs-on: macos-latest
+    needs: [build]
+    env:
+      archive_path: build/ios/archive
+      ipa_output: build/ios/ipa/Runner_fake.ipa
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download unsigned archive
+        uses: actions/download-artifact@v4
+        with:
+          name: unsigned-xcarchive
+
+      - name: Install ldid
+        run: brew install ldid
+
+      - name: Fake-sign app
+        run: |
+          APP_PATH="$archive_path/Runner.xcarchive/Products/Applications/Runner.app"
+          echo "Signing app at $APP_PATH"
+          find "$APP_PATH" -type d -path '*/Frameworks/*.framework' -exec ldid -S {} \;
+          ldid -S "$APP_PATH"
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r "$archive_path/Runner.xcarchive/Products/Applications/Runner.app" Payload/
+          zip -r "$ipa_output" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
+
+      - name: Upload fake-signed IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Runner_fake.ipa
+          path: $ipa_output
