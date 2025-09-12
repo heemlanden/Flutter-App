@@ -9,6 +9,11 @@ on:
         description: Create a nightly release
         type: boolean
         required: false
+      simulator:
+        description: Run simulator build
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   build:
@@ -17,6 +22,7 @@ jobs:
     env:
       scheme: Runner
       archive_path: build/ios/archive
+      path: "app.ipa"
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -38,23 +44,35 @@ jobs:
         run: echo "scheme=$scheme" >> $GITHUB_OUTPUT
 
       - name: Build unsigned IPA
-        run: flutter build ios --simulator
+        run: |
+          if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
+            flutter build ios --simulator
+          else
+            flutter build ipa --no-codesign
+          fi
 
       - name: List build output (debug)
         run: ls -R build/ios
 
       - name: Tar Build Artifact
-        run: tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
-
+        run: |
+          if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
+            mkdir Payload
+            cp build/ios/iphonesimulator/${{ env.scheme }}.app Payload/
+            zip -r "${{ env.path }}" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
+          else
+            tar -cvf "${{ env.path }}" "build/ios/archive/Runner.xcarchive"
+          fi
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-archive-tar
-          path: archive.xcarchive.tar
+          name: ios-app
+          path: ${{ env.path }}
 
   package:
     name: Create fake-signed IPA
     runs-on: macos-latest
+    if: ${{ github.event.inputs.simulator == 'false' }}
     needs: [build]
     permissions:
       contents: write
@@ -71,7 +89,7 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ios-archive-tar
+          name: ios-app
 
       - name: Extract Build Artifact
         run: |
