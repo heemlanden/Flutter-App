@@ -58,11 +58,12 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
             mkdir Payload
-            cp build/ios/iphonesimulator/${{ env.scheme }}.app Payload/
+            cp -r build/ios/iphonesimulator/${{ env.scheme }}.app Payload/
             zip -r "${{ env.path }}" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
           else
             tar -cvf "${{ env.path }}" "build/ios/archive/Runner.xcarchive"
           fi
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
