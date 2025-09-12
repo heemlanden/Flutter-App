@@ -70,7 +70,7 @@ jobs:
       - name: Download a Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.archive_path }}.xcarchive.tar
+          name: ios-archive-tar
 
       - name: Extract Build Artifact
         run: tar -xf "$archive_path.xcarchive.tar"
