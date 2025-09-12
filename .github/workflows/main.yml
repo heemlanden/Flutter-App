@@ -39,10 +39,10 @@ jobs:
           echo "scheme=$scheme" >> $GITHUB_OUTPUT
 
       - name: Build unsigned IPA
-        run: flutter build ipa --no-codesign --archive-path="$archive_path"
+        run: flutter build ipa --no-codesign
 
       - name: Tar Build Artifact
-        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path.xcarchive"
+        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path/Runner.xcarchive"
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
@@ -75,23 +75,19 @@ jobs:
         run: tar -xf "$archive_path.xcarchive.tar"
 
       - name: Install ldid
-        run: |
-          if [ `uname -s` = "Darwin" ]; then
-            brew install ldid
-          else
-            exit 1
-          fi
+        run: brew install ldid
 
       - name: Fakesign
         run: |
-          APP_PATH="$archive_path.xcarchive/Products/Applications/$scheme.app"
+          APP_PATH="$archive_path/Runner.xcarchive/Products/Applications/$scheme.app"
           echo "Signing app at $APP_PATH"
           find "$APP_PATH" -type d -path '*/Frameworks/*.framework' -exec ldid -Sentitlements.xml {} \;
           ldid -Sentitlements.xml "$APP_PATH"
 
       - name: Create IPA
         run: |
-          mv "$archive_path.xcarchive/Products/Applications" Payload
+          mkdir -p Payload
+          cp -r "$archive_path/Runner.xcarchive/Products/Applications/$scheme.app" Payload/
           zip -r "$scheme.ipa" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
 
       - name: Upload a Build Artifact
