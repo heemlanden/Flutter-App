@@ -82,10 +82,12 @@ jobs:
 
       - name: Create IPA
         run: |
-          cd archive.xcarchive/build/ios/archive/Runnen.xcarchive/Products/Applications
-          mkdir Payload
-          mv Runner.app Payload/
-          zip -r "${{ env.scheme }}.ipa" Payload
+          ls
+          APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r "Runner.ipa" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
+
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
