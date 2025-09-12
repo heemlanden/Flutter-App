@@ -16,7 +16,7 @@ jobs:
     runs-on: macos-latest
     env:
       scheme: Runner
-      archive_path: build/ios/archive
+      archive_path: build/ios/ipa
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -41,7 +41,7 @@ jobs:
         run: flutter build ipa --no-codesign
 
       - name: Tar Build Artifact
-        run: tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
+        run: tar -cvf "archive.xcarchive.tar" "$archive_path/Runner.xcarchive"
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
@@ -58,7 +58,7 @@ jobs:
       contents: write
     env:
       scheme: ${{ needs.build.outputs.scheme }}
-      archive_path: build/ios/archive
+      archive_path: build/ios/ipa
     outputs:
       artifact: ${{ env.scheme }}.ipa
 
@@ -92,7 +92,7 @@ jobs:
           cp -r "$archive_path/Runner.xcarchive/Products/Applications/$scheme.app" Payload/
           zip -r "$scheme.ipa" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
 
-      - name: Upload a Build Artifact
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.scheme }}.ipa
