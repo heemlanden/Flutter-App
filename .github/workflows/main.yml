@@ -2,38 +2,59 @@ name: Build Flutter iOS
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-ios:
     runs-on: macos-latest
 
     steps:
-      # 1️⃣ Haal de code op
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Installeer Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.3' # of jouw versie
+          flutter-version: '3.35.3'
+          channel: stable
 
-      # 3️⃣ Install dependencies
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 4️⃣ Build voor iOS simulator (geen codesign nodig)
-      - name: Build iOS (simulator)
+      - name: Build unsigned archive
         run: flutter build ipa --no-codesign
 
-      # 5️⃣ Optioneel: archiveer artifacts
-      - name: Archive build
+      # ➡️ Genereer ExportOptions.plist
+      - name: Create ExportOptions.plist
+        run: |
+          cat > ios/ExportOptions.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>-</string>
+            <key>compileBitcode</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist ios/ExportOptions.plist \
+            -exportPath build/ios/ipa
+
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-app
+          name: unsigned-ipa
           path: build/ios/ipa/*.ipa
