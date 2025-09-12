@@ -1,4 +1,4 @@
-name: Flutter iOS Fake-Sign Build
+name: Flutter Xcode Fake-Sign Build
 
 on: 
   push:
@@ -12,17 +12,17 @@ on:
 
 jobs:
   build:
-    name: Build Flutter iOS IPA (unsigned)
+    name: Build Flutter IPA (unsigned)
     runs-on: macos-latest
     env:
+      scheme: Runner
       archive_path: build/ios/archive
-      ipa_path: build/ios/ipa
     outputs:
-      ipa_path: ${{ env.ipa_path }}
+      scheme: ${{ steps.set_scheme.outputs.scheme }}
+      archive_path: ${{ env.archive_path }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -33,49 +33,69 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Build unsigned IPA
-        run: flutter build ipa --no-codesign
+      - name: Set Scheme
+        id: set_scheme
+        run: |
+          echo "scheme=$scheme" >> $GITHUB_OUTPUT
 
-      - name: Upload unsigned archive
+      - name: Build unsigned IPA
+        run: flutter build ipa --no-codesign --archive-path="$archive_path"
+
+      - name: Tar Build Artifact
+        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path.xcarchive"
+
+      - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unsigned-xcarchive
-          path: build/ios/archive/Runner.xcarchive
+          name: ${{ env.archive_path }}.xcarchive.tar
+          path: ${{ env.archive_path }}.xcarchive.tar
 
-  fakesign:
-    name: Fake-sign IPA with ldid
+  package:
+    name: Create fake-signed IPA
     runs-on: macos-latest
     needs: [build]
+    permissions:
+      contents: write
     env:
-      archive_path: build/ios/archive
-      ipa_output: build/ios/ipa/Runner_fake.ipa
+      scheme: ${{ needs.build.outputs.scheme }}
+      archive_path: ${{ needs.build.outputs.archive_path }}
+    outputs:
+      artifact: ${{ env.scheme }}.ipa
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Download unsigned archive
+      - name: Download a Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: unsigned-xcarchive
+          name: ${{ env.archive_path }}.xcarchive.tar
+
+      - name: Extract Build Artifact
+        run: tar -xf "$archive_path.xcarchive.tar"
 
       - name: Install ldid
-        run: brew install ldid
-
-      - name: Fake-sign app
         run: |
-          APP_PATH="$archive_path/Runner.xcarchive/Products/Applications/Runner.app"
+          if [ `uname -s` = "Darwin" ]; then
+            brew install ldid
+          else
+            exit 1
+          fi
+
+      - name: Fakesign
+        run: |
+          APP_PATH="$archive_path.xcarchive/Products/Applications/$scheme.app"
           echo "Signing app at $APP_PATH"
-          find "$APP_PATH" -type d -path '*/Frameworks/*.framework' -exec ldid -S {} \;
-          ldid -S "$APP_PATH"
+          find "$APP_PATH" -type d -path '*/Frameworks/*.framework' -exec ldid -Sentitlements.xml {} \;
+          ldid -Sentitlements.xml "$APP_PATH"
 
-      - name: Package IPA
+      - name: Create IPA
         run: |
-          mkdir -p Payload
-          cp -r "$archive_path/Runner.xcarchive/Products/Applications/Runner.app" Payload/
-          zip -r "$ipa_output" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
+          mv "$archive_path.xcarchive/Products/Applications" Payload
+          zip -r "$scheme.ipa" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
 
-      - name: Upload fake-signed IPA
+      - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Runner_fake.ipa
-          path: $ipa_output
+          name: ${{ env.scheme }}.ipa
+          path: ${{ env.scheme }}.ipa
