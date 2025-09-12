@@ -35,20 +35,19 @@ jobs:
 
       - name: Set Scheme
         id: set_scheme
-        run: |
-          echo "scheme=$scheme" >> $GITHUB_OUTPUT
+        run: echo "scheme=$scheme" >> $GITHUB_OUTPUT
 
       - name: Build unsigned IPA
         run: flutter build ipa --no-codesign
 
       - name: Tar Build Artifact
-        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path/Runner.xcarchive"
+        run: tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-archive-tar
-          path: build/ios/archive.xcarchive.tar
+          path: archive.xcarchive.tar
 
 
   package:
@@ -59,7 +58,7 @@ jobs:
       contents: write
     env:
       scheme: ${{ needs.build.outputs.scheme }}
-      archive_path: ${{ needs.build.outputs.archive_path }}
+      archive_path: build/ios/archive
     outputs:
       artifact: ${{ env.scheme }}.ipa
 
@@ -73,7 +72,9 @@ jobs:
           name: ios-archive-tar
 
       - name: Extract Build Artifact
-        run: tar -xf "$archive_path.xcarchive.tar"
+        run: |
+          mkdir -p $archive_path
+          tar -xf "archive.xcarchive.tar" -C $archive_path
 
       - name: Install ldid
         run: brew install ldid
