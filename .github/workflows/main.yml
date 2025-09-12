@@ -58,7 +58,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
             mkdir Payload
-            cp -r build/ios/iphonesimulator/${{ env.scheme }}.app /${{ env.path }}
+            cp -r build/ios/iphonesimulator "${{ env.path }}/"
             zip -r "${{ env.path }}.zip" "${{ env.path }}"
           else
             tar -cvf "${{ env.path }}" "build/ios/archive/Runner.xcarchive"
