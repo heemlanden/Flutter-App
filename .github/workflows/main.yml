@@ -16,7 +16,7 @@ jobs:
     runs-on: macos-latest
     env:
       scheme: Runner
-      archive_path: build/ios/ipa
+      archive_path: build/ios/archive
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -40,15 +40,17 @@ jobs:
       - name: Build unsigned IPA
         run: flutter build ipa --no-codesign
 
-      - name: Tar Build Artifact
-        run: tar -cvf "archive.xcarchive.tar" "$archive_path/Runner.xcarchive"
+      - name: List build output (debug)
+        run: ls -R build/ios
 
-      - name: Upload a Build Artifact
+      - name: Tar Build Artifact
+        run: tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
+
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-archive-tar
           path: archive.xcarchive.tar
-
 
   package:
     name: Create fake-signed IPA
@@ -58,7 +60,7 @@ jobs:
       contents: write
     env:
       scheme: ${{ needs.build.outputs.scheme }}
-      archive_path: build/ios/ipa
+      archive_path: build/ios/archive
     outputs:
       artifact: ${{ env.scheme }}.ipa
 
@@ -66,7 +68,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Download a Build Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: ios-archive-tar
