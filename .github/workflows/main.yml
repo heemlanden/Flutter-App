@@ -75,24 +75,17 @@ jobs:
 
       - name: Extract Build Artifact
         run: |
-          mkdir -p $archive_path
-          tar -xf "archive.xcarchive.tar" -C $archive_path
+          tar -xf "archive.xcarchive.tar"
 
       - name: Install ldid
         run: brew install ldid
 
-      - name: Fakesign
-        run: |
-          APP_PATH="$archive_path/Runner.xcarchive/Products/Applications/$scheme.app"
-          echo "Signing app at $APP_PATH"
-          find "$APP_PATH" -type d -path '*/Frameworks/*.framework' -exec ldid -Sentitlements.xml {} \;
-          ldid -Sentitlements.xml "$APP_PATH"
-
       - name: Create IPA
         run: |
-          mkdir -p Payload
-          cp -r "$archive_path/Runner.xcarchive/Products/Applications/$scheme.app" Payload/
-          zip -r "$scheme.ipa" Payload -x "._*" -x ".DS_Store" -x "__MACOSX"
+          cd archive.xcarchive/build/ios/archive/Runnen.xcarchive/Products/Applications
+          mkdir Payload
+          mv Runner.app Payload/
+          zip -r "${{ env.scheme }}.ipa" Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
