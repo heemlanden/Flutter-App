@@ -29,7 +29,7 @@ jobs:
 
       # 4️⃣ Build voor iOS simulator (geen codesign nodig)
       - name: Build iOS (simulator)
-        run: flutter build ipa
+        run: flutter build ipa --no-codesign
 
       # 5️⃣ Optioneel: archiveer artifacts
       - name: Archive build
