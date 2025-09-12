@@ -22,7 +22,7 @@ jobs:
     env:
       scheme: Runner
       archive_path: build/ios/archive
-      path: "app.ipa"
+      path: "app.zip"
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
