@@ -57,6 +57,7 @@ jobs:
       - name: Tar Build Artifact
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
+            mkdir App
             cp -r build/ios/iphonesimulator App/
             zip -r "${{ env.path }}.zip" App/
           else
