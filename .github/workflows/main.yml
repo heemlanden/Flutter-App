@@ -18,7 +18,7 @@ jobs:
     name: Build for iOS
     runs-on: macos-latest
     outputs:
-      scheme: ${{ env.scheme }}
+      simulator: ${{ env.simulator }}
 
     steps:
       - uses: actions/checkout@v3
@@ -91,7 +91,7 @@ jobs:
   package:
     name: Create IPA
     runs-on: macos-latest
-    if: ${{ needs.build-ios.outputs.scheme == 'false' }}
+    if: ${{ needs.build-ios.outputs.simulator == 'false' }}
     needs: [build-ios]
     permissions:
       contents: write
