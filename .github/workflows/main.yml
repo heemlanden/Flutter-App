@@ -14,17 +14,16 @@ on:
         type: boolean
         required: true
         default: false
+      scheme:
+        description: iOS Scheme to build
+        type: string
+        required: false
+        default: Runner
 
 jobs:
-  build:
+  build-ios:
     name: Build Flutter IPA (unsigned)
     runs-on: macos-latest
-    env:
-      scheme: Runner
-      archive_path: build/ios/archive
-    outputs:
-      scheme: ${{ steps.set_scheme.outputs.scheme }}
-      archive_path: ${{ env.archive_path }}
 
     steps:
       - uses: actions/checkout@v3
@@ -38,9 +37,6 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Set Scheme
-        id: set_scheme
-        run: echo "scheme=$scheme" >> $GITHUB_OUTPUT
 
       - name: Build unsigned IPA
         run: |
@@ -56,41 +52,45 @@ jobs:
       - name: Tar Build Artifact
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
-            tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/Runner.app"
+            tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/${{ github.event.inputs.scheme }}.app"
             flutter clean
           else
-            tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
+            tar -cvf "archive.xcarchive.tar" "build/ios/archive/${{ github.event.inputs.scheme }}.xcarchive"
             flutter clean
           fi
           
-      - name: Build for android
-        run: flutter build apk
-
       - name: Upload iOS Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app
           path: archive.xcarchive.tar
 
+  build-android:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ github.event.inputs.scheme }}.apk
+    
+    steps:
+      - name: Build for android
+        run: flutter build apk
+
       - name: Upload Android Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-app
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/${{ github.event.inputs.scheme }}.apk
 
 
   package:
     name: Create fake-signed IPA
     runs-on: macos-latest
     if: ${{ github.event.inputs.simulator == 'false' }}
-    needs: [build]
+    needs: [build-ios]
     permissions:
       contents: write
-    env:
-      scheme: ${{ needs.build.outputs.scheme }}
-      archive_path: build/ios/archive
     outputs:
-      artifact: ${{ env.scheme }}.ipa
+      artifact: ${{ github.event.inputs.scheme }}.ipa
 
     steps:
       - name: Checkout
@@ -120,8 +120,8 @@ jobs:
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.scheme }}.ipa
-          path: ${{ env.scheme }}.ipa
+          name: ${{ github.event.inputs.scheme }}.ipa
+          path: ${{ github.event.inputs.scheme }}.ipa
   
   release__nightly:
     name: Nightly Release
@@ -129,7 +129,7 @@ jobs:
       contents: write
     if: inputs.release__nightly || github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [package]
+    needs: [package, build-android]
     concurrency:
       group: release__nightly
       cancel-in-progress: true
@@ -148,3 +148,4 @@ jobs:
             This is a nightly release [created automatically with GitHub Actions workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}).
           files: |
             ${{ needs.package.outputs.artifact }}
+            ${{ needs.build-android.outputs.artifact }}
