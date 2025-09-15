@@ -63,11 +63,14 @@ jobs:
   build-android:
     name: Build for Android
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       artifact: ${{ env.scheme }}.apk
     
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -79,13 +82,15 @@ jobs:
         run: flutter pub get
 
       - name: Build for android
-        run: flutter build apk
+        run: |
+          flutter build apk
+          cp build/app/outputs/flutter-apk/${{ env.scheme }}.apk  ${{ env.scheme }}.apk
 
       - name: Upload Android Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-app
-          path: build/app/outputs/flutter-apk/${{ env.scheme }}.apk
+          path: ${{ env.scheme }}.apk
 
 
   package:
@@ -111,8 +116,6 @@ jobs:
         run: |
           tar -xf "archive.xcarchive.tar"
 
-      - name: Install ldid
-        run: brew install ldid
 
       - name: Create IPA
         run: |
