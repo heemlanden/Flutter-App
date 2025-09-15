@@ -10,7 +10,7 @@ on:
         type: boolean
         required: false
 env:
-  scheme: "Runnner"
+  scheme: "Runner"
   simulator: false
 
 jobs:
