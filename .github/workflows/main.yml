@@ -145,6 +145,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.package.outputs.artifact }}
+      - name: Download a Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-android.outputs.artifact }}
+
       - name: Nightly Release
         uses: andelf/nightly-release@v1
         env:
