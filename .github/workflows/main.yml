@@ -56,20 +56,12 @@ jobs:
       - name: Tar Build Artifact
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
-            mkdir -p "$GITHUB_WORKSPACE/downloads"
-            mv build/ios "$GITHUB_WORKSPACE/downloads"
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git pull
-            git add "$GITHUB_WORKSPACE/downloads/*"
-            git commit -m "Add IPA"
-            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
+            tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/Runner.app"
           else
             tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
           fi
 
       - name: Upload Build Artifact
-        if: ${{ github.event.inputs.simulator == 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-app
