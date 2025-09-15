@@ -15,7 +15,17 @@ class MainApp extends StatelessWidget {
           title: const Text('Home'),
         ),
         body: const Center(
-          child: Text('Welcome to this App!'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Welcome to this App!'),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: null, // Does nothing
+                child: Text('Click me'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -90,7 +90,7 @@ jobs:
         run: |
           curl -X POST https://api.appetize.io/v1/apps/b_b5ezsou7ugqlvcx4kdlqc2qnlm \
             -H "X-API-KEY: tok_hcmzfynu557ajoqatemivzekeq" \
-            -F "file=${{ env.scheme }}.apk" \
+            -F "file=@${{ env.scheme }}.apk" \
             -F "platform=android"
 
       - name: Upload Android Build Artifact
