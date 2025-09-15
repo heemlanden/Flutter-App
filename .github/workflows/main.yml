@@ -57,15 +57,27 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
             tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/Runner.app"
+            flutter clean
           else
             tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
+            flutter clean
           fi
+          
+      - name: Build for android
+        run: flutter build apk
 
-      - name: Upload Build Artifact
+      - name: Upload iOS Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app
           path: archive.xcarchive.tar
+
+      - name: Upload Android Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app
+          path: build/app/outputs/flutter-apk/app-release.apk
+
 
   package:
     name: Create fake-signed IPA
