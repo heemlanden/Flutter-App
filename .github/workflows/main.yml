@@ -126,8 +126,8 @@ jobs:
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.scheme }}.ipa
-          path: ${{ github.event.inputs.scheme }}.ipa
+          name: ${{ env.scheme }}.ipa
+          path: ${{ env.scheme }}.ipa
   
   release__nightly:
     name: Release
