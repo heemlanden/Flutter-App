@@ -9,21 +9,16 @@ on:
         description: Create a nightly release
         type: boolean
         required: false
-      simulator:
-        description: Run simulator build
-        type: boolean
-        required: true
-        default: false
-      scheme:
-        description: iOS Scheme to build
-        type: string
-        required: true
-        default: Runner
+env:
+  scheme: "Runnner"
+  simulator: false
 
 jobs:
   build-ios:
     name: Build for iOS
     runs-on: macos-latest
+    outputs:
+      scheme: ${{ env.scheme }}
 
     steps:
       - uses: actions/checkout@v3
@@ -40,7 +35,7 @@ jobs:
 
       - name: Build unsigned IPA
         run: |
-          if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
+          if [ "${{ env.simulator }}" = "true" ]; then
             flutter build ios --simulator
           else
             flutter build ipa --no-codesign
@@ -51,11 +46,11 @@ jobs:
 
       - name: Tar Build Artifact
         run: |
-          if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
-            tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/${{ github.event.inputs.scheme }}.app"
+          if [ "${{ env.simulator }}" = "true" ]; then
+            tar -cvf "archive.xcarchive.tar" "build/ios/iphonesimulator/${{ env.scheme }}.app"
             flutter clean
           else
-            tar -cvf "archive.xcarchive.tar" "build/ios/archive/${{ github.event.inputs.scheme }}.xcarchive"
+            tar -cvf "archive.xcarchive.tar" "build/ios/archive/${{ env.scheme }}.xcarchive"
             flutter clean
           fi
           
@@ -69,7 +64,7 @@ jobs:
     name: Build for Android
     runs-on: ubuntu-latest
     outputs:
-      artifact: ${{ github.event.inputs.scheme }}.apk
+      artifact: ${{ env.scheme }}.apk
     
     steps:
       - uses: actions/checkout@v3
@@ -90,18 +85,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-app
-          path: build/app/outputs/flutter-apk/${{ github.event.inputs.scheme }}.apk
+          path: build/app/outputs/flutter-apk/${{ env.scheme }}.apk
 
 
   package:
     name: Create IPA
     runs-on: macos-latest
-    if: ${{ github.event.inputs.simulator == 'false' }}
+    if: ${{ needs.build-ios.outputs.scheme == 'false' }}
     needs: [build-ios]
     permissions:
       contents: write
     outputs:
-      artifact: ${{ github.event.inputs.scheme }}.ipa
+      artifact: ${{ env.scheme }}.ipa
 
     steps:
       - name: Checkout
