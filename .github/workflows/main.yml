@@ -89,7 +89,7 @@ jobs:
       - name: Upload Android Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-app
+          name: ${{ env.scheme }}.apk
           path: ${{ env.scheme }}.apk
 
 
