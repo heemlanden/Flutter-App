@@ -22,7 +22,6 @@ jobs:
     env:
       scheme: Runner
       archive_path: build/ios/archive
-      path: "build.zip"
     outputs:
       scheme: ${{ steps.set_scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -57,16 +56,24 @@ jobs:
       - name: Tar Build Artifact
         run: |
           if [ "${{ github.event.inputs.simulator }}" = "true" ]; then
-            zip -r "build.zip" build
+            mkdir -p "$GITHUB_WORKSPACE/downloads"
+            mv build/ios "$GITHUB_WORKSPACE/downloads"
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git pull
+            git add "$GITHUB_WORKSPACE/downloads/*"
+            git commit -m "Add IPA"
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
           else
-            tar -cvf "${{ env.path }}" "build/ios/archive/Runner.xcarchive"
+            tar -cvf "archive.xcarchive.tar" "build/ios/archive/Runner.xcarchive"
           fi
 
       - name: Upload Build Artifact
+        if: ${{ github.event.inputs.simulator == 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-app
-          path: ${{ env.path }}
+          path: archive.xcarchive.tar
 
   package:
     name: Create fake-signed IPA
