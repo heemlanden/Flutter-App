@@ -84,7 +84,7 @@ jobs:
       - name: Build for android
         run: |
           flutter build apk
-          cp build/app/outputs/flutter-apk/${{ env.scheme }}.apk  ${{ env.scheme }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk  ${{ env.scheme }}.apk
 
       - name: Upload Android Build Artifact
         uses: actions/upload-artifact@v4
